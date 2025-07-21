@@ -2,6 +2,7 @@
 
 这是一个基于HTML+JavaScript的日语五十音打字消除游戏，适合日语初学者通过趣味方式练习假名和罗马音的对应关系。
 
+👉 [🔗 点击这里直接试玩](https://nowhereman-in-galaxy.github.io/hiragana-typing-game/)
 ## 游戏简介
 
 - 看到假名从屏幕顶部掉落时，快速在下方输入框输入对应的罗马音（罗马字母），即可消除假名并获得分数。
