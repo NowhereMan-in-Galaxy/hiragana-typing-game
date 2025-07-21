@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>五十音打字消除游戏</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(45deg, #1a1a2e, #16213e, #0f3460);
+            overflow: hidden;
+            height: 100vh;
+            color: white;
+        }
+
+        .game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .game-header {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            display: flex;
+            gap: 20px;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .score, .combo, .lives, .level-info {
+            background: rgba(0,0,0,0.7);
+            padding: 8px 15px;
+            border-radius: 20px;
+            border: 2px solid #00ffff;
+            box-shadow: 0 0 15px rgba(0,255,255,0.5);
+            font-size: 14px;
+        }
+
+        .combo.active {
+            animation: comboGlow 0.3s ease-in-out;
+            border-color: #ffff00;
+            box-shadow: 0 0 30px rgba(255,255,0,0.8);
+        }
+
+        .game-area {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .falling-kana {
+            position: absolute;
+            font-size: 48px;
+            font-weight: bold;
+            color: #00ffff;
+            text-shadow: 0 0 20px currentColor;
+            transition: all 0.1s ease;
+            user-select: none;
+            cursor: default;
+        }
+
+        .falling-kana.revenge {
+            color: #ff4444;
+            font-size: 56px;
+            text-shadow: 0 0 30px #ff4444;
+            animation: revenge-pulse 0.5s infinite alternate;
+        }
+
+        .falling-kana.hit {
+            animation: explode 0.3s ease-out forwards;
+        }
+
+        .input-area {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+        }
+
+        .input-box {
+            width: 400px;
+            height: 60px;
+            font-size: 24px;
+            text-align: center;
+            background: rgba(0,0,0,0.8);
+            border: 3px solid #00ffff;
+            border-radius: 30px;
+            color: white;
+            outline: none;
+            box-shadow: 0 0 30px rgba(0,255,255,0.5);
+        }
+
+        .input-box:focus {
+            border-color: #ffff00;
+            box-shadow: 0 0 40px rgba(255,255,0,0.7);
+        }
+
+        .start-screen, .game-over-screen, .level-select-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        .start-screen h1 {
+            font-size: 48px;
+            margin-bottom: 20px;
+            background: linear-gradient(45deg, #00ffff, #ffff00, #ff00ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: rainbow 2s infinite;
+        }
+
+        .level-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 15px;
+            max-width: 800px;
+            margin: 20px 0;
+        }
+
+        .level-btn {
+            padding: 15px;
+            font-size: 18px;
+            background: linear-gradient(45deg, #333, #555);
+            border: 2px solid #666;
+            border-radius: 15px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+            min-height: 80px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .level-btn.unlocked {
+            background: linear-gradient(45deg, #00ffff, #0080ff);
+            border-color: #00ffff;
+        }
+
+        .level-btn.completed {
+            background: linear-gradient(45deg, #00ff00, #008000);
+            border-color: #00ff00;
+        }
+
+        .level-btn.challenge {
+            background: linear-gradient(45deg, #ff4444, #cc0000);
+            border-color: #ff4444;
+        }
+
+        .level-btn:hover.unlocked, .level-btn:hover.completed, .level-btn:hover.challenge {
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(0,255,255,0.8);
+        }
+
+        .level-btn .level-title {
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .level-btn .level-score {
+            font-size: 12px;
+            margin-top: 5px;
+            opacity: 0.8;
+        }
+
+        .start-btn, .restart-btn, .back-btn {
+            padding: 15px 30px;
+            font-size: 24px;
+            background: linear-gradient(45deg, #00ffff, #0080ff);
+            border: none;
+            border-radius: 25px;
+            color: white;
+            cursor: pointer;
+            margin: 10px;
+            transition: all 0.3s;
+        }
+
+        .start-btn:hover, .restart-btn:hover, .back-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 30px rgba(0,255,255,0.8);
+        }
+
+        .particle {
+            position: absolute;
+            pointer-events: none;
+            z-index: 999;
+        }
+
+        .screen-shake {
+            animation: shake 0.3s ease-in-out;
+        }
+
+        .bullet-time {
+            animation: bulletTime 1s ease-out;
+        }
+
+        .progress-bar {
+            position: absolute;
+            top: 70px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 300px;
+            height: 15px;
+            background: rgba(0,0,0,0.7);
+            border-radius: 8px;
+            overflow: hidden;
+            border: 2px solid #00ffff;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00ffff, #ffff00);
+            transition: width 0.3s ease;
+            border-radius: 6px;
+        }
+
+        .level-complete {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.9);
+            padding: 40px;
+            border-radius: 20px;
+            border: 3px solid #00ff00;
+            text-align: center;
+            z-index: 3000;
+            box-shadow: 0 0 50px rgba(0,255,0,0.8);
+        }
+
+        .level-complete h2 {
+            font-size: 36px;
+            color: #00ff00;
+            margin-bottom: 20px;
+            animation: rainbow 1s infinite;
+        }
+
+        @keyframes comboGlow {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes explode {
+            0% { transform: scale(1) rotate(0deg); opacity: 1; }
+            100% { transform: scale(2) rotate(360deg); opacity: 0; }
+        }
+
+        @keyframes revenge-pulse {
+            0% { transform: scale(1); }
+            100% { transform: scale(1.1); }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+
+        @keyframes bulletTime {
+            0% { filter: hue-rotate(0deg) saturate(1); }
+            50% { filter: hue-rotate(180deg) saturate(2); }
+            100% { filter: hue-rotate(360deg) saturate(1); }
+        }
+
+        @keyframes rainbow {
+            0% { filter: hue-rotate(0deg); }
+            100% { filter: hue-rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container" id="gameContainer">
+        <!-- 开始画面 -->
+        <div class="start-screen" id="startScreen">
+            <h1>五十音打字消除</h1>
+            <p style="font-size: 20px; margin-bottom: 30px;">快速输入罗马音消除假名！</p>
+            <button class="start-btn" onclick="showLevelSelect()">开始游戏</button>
+            <div style="margin-top: 20px; font-size: 14px; text-align: center;">
+                <p>操作说明：看到假名掉落时，快速输入对应的罗马音</p>
+                <p>从あ行开始学习，逐步挑战更难的关卡！</p>
+            </div>
+        </div>
+
+        <!-- 关卡选择画面 -->
+        <div class="level-select-screen" id="levelSelectScreen" style="display: none;">
+            <h2 style="font-size: 36px; margin-bottom: 30px;">选择关卡</h2>
+            <div class="level-grid" id="levelGrid"></div>
+            <button class="back-btn" onclick="backToStart()">返回主菜单</button>
+        </div>
+
+        <!-- 游戏结束画面 -->
+        <div class="game-over-screen" id="gameOverScreen" style="display: none;">
+            <h1>关卡完成</h1>
+            <p id="finalScore" style="font-size: 24px; margin: 20px 0;"></p>
+            <p id="finalCombo" style="font-size: 18px; margin-bottom: 20px;"></p>
+            <p id="newRecord" style="font-size: 16px; color: #00ff00; margin-bottom: 30px;"></p>
+            <button class="restart-btn" onclick="restartLevel()">重新挑战</button>
+            <button class="back-btn" onclick="backToLevelSelect()">选择关卡</button>
+        </div>
+
+        <!-- 关卡完成弹窗 -->
+        <div class="level-complete" id="levelComplete" style="display: none;">
+            <h2>关卡完成！</h2>
+            <p id="completeScore" style="font-size: 20px; margin: 15px 0;"></p>
+            <p id="completeCombo" style="font-size: 16px; margin-bottom: 25px;"></p>
+            <button class="start-btn" onclick="nextLevel()">下一关</button>
+            <button class="back-btn" onclick="backToLevelSelect()">选择关卡</button>
+        </div>
+
+        <!-- 游戏界面 -->
+        <div class="game-header">
+            <div class="level-info">关卡: <span id="currentLevel">1</span></div>
+            <div class="score">分数: <span id="score">0</span></div>
+            <div class="combo" id="comboDisplay">连击: <span id="combo">0</span></div>
+            <div class="lives">生命: <span id="lives">❤️❤️❤️</span></div>
+        </div>
+
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+
+        <div class="game-area" id="gameArea"></div>
+
+        <div class="input-area">
+            <input type="text" class="input-box" id="inputBox" placeholder="输入罗马音..." autocomplete="off">
+        </div>
+    </div>
+
+    <script>
+        // 五十音数据
+        const hiraganaData = {
+            'あ': 'a', 'い': 'i', 'う': 'u', 'え': 'e', 'お': 'o',
+            'か': 'ka', 'き': 'ki', 'く': 'ku', 'け': 'ke', 'こ': 'ko',
+            'さ': 'sa', 'し': 'shi', 'す': 'su', 'せ': 'se', 'そ': 'so',
+            'た': 'ta', 'ち': 'chi', 'つ': 'tsu', 'て': 'te', 'と': 'to',
+            'な': 'na', 'に': 'ni', 'ぬ': 'nu', 'ね': 'ne', 'の': 'no',
+            'は': 'ha', 'ひ': 'hi', 'ふ': 'fu', 'へ': 'he', 'ほ': 'ho',
+            'ま': 'ma', 'み': 'mi', 'む': 'mu', 'め': 'me', 'も': 'mo',
+            'や': 'ya', 'ゆ': 'yu', 'よ': 'yo',
+            'ら': 'ra', 'り': 'ri', 'る': 'ru', 'れ': 're', 'ろ': 'ro',
+            'わ': 'wa', 'ゐ': 'wi', 'ゑ': 'we', 'を': 'wo', 'ん': 'n'
+        };
+
+        const katakanaData = {
+            'ア': 'a', 'イ': 'i', 'ウ': 'u', 'エ': 'e', 'オ': 'o',
+            'カ': 'ka', 'キ': 'ki', 'ク': 'ku', 'ケ': 'ke', 'コ': 'ko',
+            'サ': 'sa', 'シ': 'shi', 'ス': 'su', 'セ': 'se', 'ソ': 'so',
+            'タ': 'ta', 'チ': 'chi', 'ツ': 'tsu', 'テ': 'te', 'ト': 'to',
+            'ナ': 'na', 'ニ': 'ni', 'ヌ': 'nu', 'ネ': 'ne', 'ノ': 'no',
+            'ハ': 'ha', 'ヒ': 'hi', 'フ': 'fu', 'ヘ': 'he', 'ホ': 'ho',
+            'マ': 'ma', 'ミ': 'mi', 'ム': 'mu', 'メ': 'me', 'モ': 'mo',
+            'ヤ': 'ya', 'ユ': 'yu', 'ヨ': 'yo',
+            'ラ': 'ra', 'リ': 'ri', 'ル': 'ru', 'レ': 're', 'ロ': 'ro',
+            'ワ': 'wa', 'ヰ': 'wi', 'ヱ': 'we', 'ヲ': 'wo', 'ン': 'n'
+        };
+
+        // 关卡配置
+        const levelConfig = [
+            // 学习关卡
+            { id: 1, name: 'あ行平假名', type: 'hiragana', chars: ['あ', 'い', 'う', 'え', 'お'], target: 500 },
+            { id: 2, name: 'あ行片假名', type: 'katakana', chars: ['ア', 'イ', 'ウ', 'エ', 'オ'], target: 500 },
+            { id: 3, name: 'か行平假名', type: 'hiragana', chars: ['か', 'き', 'く', 'け', 'こ'], target: 600 },
+            { id: 4, name: 'か行片假名', type: 'katakana', chars: ['カ', 'キ', 'ク', 'ケ', 'コ'], target: 600 },
+            { id: 5, name: 'さ行平假名', type: 'hiragana', chars: ['さ', 'し', 'す', 'せ', 'そ'], target: 700 },
+            { id: 6, name: 'さ行片假名', type: 'katakana', chars: ['サ', 'シ', 'ス', 'セ', 'ソ'], target: 700 },
+            { id: 7, name: 'た行平假名', type: 'hiragana', chars: ['た', 'ち', 'つ', 'て', 'と'], target: 800 },
+            { id: 8, name: 'た行片假名', type: 'katakana', chars: ['タ', 'チ', 'ツ', 'テ', 'ト'], target: 800 },
+            { id: 9, name: 'な行平假名', type: 'hiragana', chars: ['な', 'に', 'ぬ', 'ね', 'の'], target: 900 },
+            { id: 10, name: 'な行片假名', type: 'katakana', chars: ['ナ', 'ニ', 'ヌ', 'ネ', 'ノ'], target: 900 },
+            
+            // 挑战关卡
+            { id: 11, name: '混合挑战1', type: 'challenge', chars: ['あ', 'い', 'う', 'え', 'お', 'ア', 'イ', 'ウ', 'エ', 'オ'], target: 1000 },
+            { id: 12, name: '混合挑战2', type: 'challenge', chars: ['か', 'き', 'く', 'け', 'こ', 'カ', 'キ', 'ク', 'ケ', 'コ'], target: 1200 },
+            { id: 13, name: '终极挑战', type: 'challenge', chars: Object.keys({...hiraganaData, ...katakanaData}), target: 2000 }
+        ];
+
+        // 游戏状态
+        let gameState = {
+            score: 0,
+            combo: 0,
+            maxCombo: 0,
+            lives: 3,
+            currentLevel: 1,
+            fallingKanas: [],
+            wrongKanas: new Set(),
+            gameRunning: false,
+            spawnRate: 2000,
+            fallSpeed: 2,
+            targetScore: 500,
+            spawnInterval: null
+        };
+
+        // 关卡数据（存储最高分）
+        let levelData = JSON.parse(localStorage.getItem('kanaGameLevelData') || '{}');
+
+        // 当前关卡的假名池
+        let currentKanaPool = [];
+
+        // DOM元素
+        const gameContainer = document.getElementById('gameContainer');
+        const gameArea = document.getElementById('gameArea');
+        const inputBox = document.getElementById('inputBox');
+        const scoreElement = document.getElementById('score');
+        const comboElement = document.getElementById('combo');
+        const livesElement = document.getElementById('lives');
+        const comboDisplay = document.getElementById('comboDisplay');
+        const progressFill = document.getElementById('progressFill');
+        const currentLevelElement = document.getElementById('currentLevel');
+
+        // 初始化关卡数据
+        function initLevelData() {
+            levelConfig.forEach(level => {
+                if (!levelData[level.id]) {
+                    levelData[level.id] = {
+                        unlocked: level.id === 1,
+                        completed: false,
+                        bestScore: 0
+                    };
+                }
+            });
+            saveLevelData();
+        }
+
+        // 保存关卡数据
+        function saveLevelData() {
+            localStorage.setItem('kanaGameLevelData', JSON.stringify(levelData));
+        }
+
+        // 显示关卡选择
+        function showLevelSelect() {
+            document.getElementById('startScreen').style.display = 'none';
+            document.getElementById('levelSelectScreen').style.display = 'flex';
+            renderLevelGrid();
+        }
+
+        // 渲染关卡网格
+        function renderLevelGrid() {
+            const grid = document.getElementById('levelGrid');
+            grid.innerHTML = '';
+
+            levelConfig.forEach(level => {
+                const btn = document.createElement('button');
+                btn.className = 'level-btn';
+                
+                const data = levelData[level.id];
+                if (data.completed) {
+                    btn.classList.add('completed');
+                } else if (data.unlocked) {
+                    btn.classList.add('unlocked');
+                }
+
+                if (level.type === 'challenge' && data.unlocked) {
+                    btn.classList.add('challenge');
+                }
+
+                btn.innerHTML = `
+                    <div class="level-title">${level.name}</div>
+                    <div class="level-score">目标: ${level.target}</div>
+                    <div class="level-score">最高: ${data.bestScore}</div>
+                `;
+
+                if (data.unlocked) {
+                    btn.onclick = () => startLevel(level.id);
+                }
+
+                grid.appendChild(btn);
+            });
+        }
+
+        // 开始指定关卡
+        function startLevel(levelId) {
+            const level = levelConfig.find(l => l.id === levelId);
+            if (!level || !levelData[levelId].unlocked) return;
+
+            // 清理之前的游戏状态
+            if (gameState.spawnInterval) {
+                clearInterval(gameState.spawnInterval);
+            }
+            
+            // 清理之前的假名
+            gameArea.innerHTML = '';
+
+            gameState.currentLevel = levelId;
+            gameState.targetScore = level.target;
+            gameState.score = 0;
+            gameState.combo = 0;
+            gameState.maxCombo = 0;
+            gameState.lives = 3;
+            gameState.fallingKanas = [];
+            gameState.wrongKanas.clear();
+            gameState.gameRunning = true;
+
+            // 设置难度
+            if (level.type === 'challenge') {
+                gameState.spawnRate = 1500;
+                gameState.fallSpeed = 3;
+            } else {
+                gameState.spawnRate = 2000;
+                gameState.fallSpeed = 2;
+            }
+
+            currentKanaPool = level.chars;
+            
+            document.getElementById('levelSelectScreen').style.display = 'none';
+            currentLevelElement.textContent = levelId;
+            updateDisplay();
+            
+            inputBox.value = '';
+            inputBox.focus();
+            
+            gameLoop();
+            
+            // 开始生成假名
+            gameState.spawnInterval = setInterval(() => {
+                if (!gameState.gameRunning) {
+                    clearInterval(gameState.spawnInterval);
+                    return;
+                }
+                createFallingKana();
+            }, gameState.spawnRate);
+        }
+
+        // 生成随机假名
+        function getRandomKana() {
+            if (Math.random() < 0.3 && gameState.wrongKanas.size > 0) {
+                const wrongKanasArray = Array.from(gameState.wrongKanas);
+                const wrongKana = wrongKanasArray[Math.floor(Math.random() * wrongKanasArray.length)];
+                if (currentKanaPool.includes(wrongKana)) {
+                    return wrongKana;
+                }
+            }
+            return currentKanaPool[Math.floor(Math.random() * currentKanaPool.length)];
+        }
+
+        // 创建掉落的假名
+        function createFallingKana() {
+            if (!gameState.gameRunning) return;
+
+            const kana = getRandomKana();
+            const isRevenge = gameState.wrongKanas.has(kana);
+            
+            const kanaElement = document.createElement('div');
+            kanaElement.className = 'falling-kana' + (isRevenge ? ' revenge' : '');
+            kanaElement.textContent = kana;
+            kanaElement.style.left = Math.random() * (window.innerWidth - 100) + 'px';
+            kanaElement.style.top = '-60px';
+            
+            const kanaObj = {
+                element: kanaElement,
+                kana: kana,
+                x: parseFloat(kanaElement.style.left),
+                y: -60,
+                speed: gameState.fallSpeed * (isRevenge ? 1.5 : 1),
+                isRevenge: isRevenge
+            };
+
+            gameArea.appendChild(kanaElement);
+            gameState.fallingKanas.push(kanaObj);
+        }
+
+        // 更新掉落的假名位置
+        function updateFallingKanas() {
+            const toRemove = [];
+            
+            gameState.fallingKanas.forEach((kanaObj, index) => {
+                kanaObj.y += kanaObj.speed;
+                kanaObj.element.style.top = kanaObj.y + 'px';
+
+                if (kanaObj.y > window.innerHeight) {
+                    kanaObj.element.remove();
+                    toRemove.push(index);
+                    loseLife();
+                    resetCombo();
+                }
+            });
+
+            // 从后往前删除，避免索引问题
+            for (let i = toRemove.length - 1; i >= 0; i--) {
+                gameState.fallingKanas.splice(toRemove[i], 1);
+            }
+        }
+
+        // 检查输入 - 改进版：支持部分匹配和完全匹配
+        function checkInput() {
+            const input = inputBox.value.toLowerCase().trim();
+            if (!input) return;
+
+            const allKanas = {...hiraganaData, ...katakanaData};
+            let matched = false;
+            let partialMatch = false;
+
+            // 检查完全匹配
+            gameState.fallingKanas.forEach((kanaObj, index) => {
+                if (kanaObj.element.classList.contains('hit')) return;
+                
+                const romaji = allKanas[kanaObj.kana];
+                
+                // 完全匹配
+                if (romaji === input) {
+                    matched = true;
+                    kanaObj.element.classList.add('hit');
+                    
+                    createExplosion(kanaObj.x + 25, kanaObj.y + 25);
+                    
+                    const baseScore = kanaObj.isRevenge ? 50 : 20;
+                    const comboBonus = Math.floor(gameState.combo * 5);
+                    gameState.score += baseScore + comboBonus;
+                    gameState.combo++;
+                    
+                    if (gameState.combo > gameState.maxCombo) {
+                        gameState.maxCombo = gameState.combo;
+                    }
+
+                    if (gameState.wrongKanas.has(kanaObj.kana)) {
+                        gameState.wrongKanas.delete(kanaObj.kana);
+                    }
+
+                    if (gameState.combo % 5 === 0) {
+                        comboDisplay.classList.add('active');
+                        setTimeout(() => comboDisplay.classList.remove('active'), 300);
+                    }
+
+                    if (gameState.combo % 20 === 0) {
+                        gameContainer.classList.add('bullet-time');
+                        setTimeout(() => gameContainer.classList.remove('bullet-time'), 1000);
+                    }
+
+                    setTimeout(() => {
+                        const idx = gameState.fallingKanas.indexOf(kanaObj);
+                        if (idx > -1) {
+                            kanaObj.element.remove();
+                            gameState.fallingKanas.splice(idx, 1);
+                        }
+                    }, 300);
+
+                    updateDisplay();
+                    
+                    // 检查是否达到目标分数
+                    if (gameState.score >= gameState.targetScore) {
+                        completeLevel();
+                    }
+                    
+                    // 清空输入框
+                    inputBox.value = '';
+                }
+                // 部分匹配 - 输入是正确罗马音的开头
+                else if (romaji.startsWith(input)) {
+                    partialMatch = true;
+                    // 给假名添加部分匹配的视觉提示
+                    kanaObj.element.style.color = '#ffff00';
+                    kanaObj.element.style.textShadow = '0 0 30px #ffff00';
+                }
+                // 不匹配 - 恢复原始颜色
+                else {
+                    if (!kanaObj.isRevenge) {
+                        kanaObj.element.style.color = '#00ffff';
+                        kanaObj.element.style.textShadow = '0 0 20px #00ffff';
+                    }
+                }
+            });
+
+            // 如果完全匹配了，已经清空输入框
+            if (matched) {
+                return;
+            }
+
+            // 如果有部分匹配，保留输入等待完成
+            if (partialMatch) {
+                return;
+            }
+
+            // 没有任何匹配 - 检查是否输入了错误的完整罗马音
+            let isCompleteWrongInput = false;
+            const possibleKanas = Object.keys(allKanas).filter(k => allKanas[k] === input);
+            
+            if (possibleKanas.length > 0) {
+                // 输入了完整的罗马音，但不是当前掉落的假名
+                possibleKanas.forEach(kana => {
+                    if (currentKanaPool.includes(kana)) {
+                        gameState.wrongKanas.add(kana);
+                    }
+                });
+                isCompleteWrongInput = true;
+            } else {
+                // 检查输入是否不可能匹配任何假名（不是任何罗马音的前缀）
+                const anyPossibleMatch = currentKanaPool.some(kana => {
+                    const romaji = allKanas[kana];
+                    return romaji && romaji.startsWith(input);
+                });
+                
+                if (!anyPossibleMatch && input.length >= 2) {
+                    isCompleteWrongInput = true;
+                }
+            }
+
+            // 如果是完全错误的输入，清空并惩罚
+            if (isCompleteWrongInput) {
+                resetCombo();
+                shakeScreen();
+                inputBox.value = '';
+            }
+        }
+
+        // 完成关卡
+        function completeLevel() {
+            gameState.gameRunning = false;
+            
+            if (gameState.spawnInterval) {
+                clearInterval(gameState.spawnInterval);
+            }
+            
+            gameState.fallingKanas.forEach(kanaObj => {
+                kanaObj.element.remove();
+            });
+            gameState.fallingKanas = [];
+
+            // 更新关卡数据
+            const currentLevelData = levelData[gameState.currentLevel];
+            const isNewRecord = gameState.score > currentLevelData.bestScore;
+            
+            currentLevelData.completed = true;
+            currentLevelData.bestScore = Math.max(currentLevelData.bestScore, gameState.score);
+
+            // 解锁下一关
+            if (gameState.currentLevel < levelConfig.length) {
+                levelData[gameState.currentLevel + 1] = levelData[gameState.currentLevel + 1] || {};
+                levelData[gameState.currentLevel + 1].unlocked = true;
+            }
+
+            saveLevelData();
+
+            // 显示完成界面
+            document.getElementById('completeScore').textContent = `分数: ${gameState.score}`;
+            document.getElementById('completeCombo').textContent = `最高连击: ${gameState.maxCombo}` + (isNewRecord ? ' 🎉新纪录!' : '');
+            document.getElementById('levelComplete').style.display = 'block';
+        }
+
+        // 下一关
+        function nextLevel() {
+            document.getElementById('levelComplete').style.display = 'none';
+            if (gameState.currentLevel < levelConfig.length) {
+                startLevel(gameState.currentLevel + 1);
+            } else {
+                backToLevelSelect();
+            }
+        }
+
+        // 重置连击
+        function resetCombo() {
+            gameState.combo = 0;
+            updateDisplay();
+        }
+
+        // 失去生命
+        function loseLife() {
+            gameState.lives--;
+            shakeScreen();
+            updateDisplay();
+            
+            if (gameState.lives <= 0) {
+                gameOver();
+            }
+        }
+
+        // 游戏结束
+        function gameOver() {
+            gameState.gameRunning = false;
+            
+            if (gameState.spawnInterval) {
+                clearInterval(gameState.spawnInterval);
+            }
+            
+            gameState.fallingKanas.forEach(kanaObj => {
+                kanaObj.element.remove();
+            });
+            gameState.fallingKanas = [];
+
+            // 更新最高分（即使没完成关卡）
+            const currentLevelData = levelData[gameState.currentLevel];
+            const isNewRecord = gameState.score > currentLevelData.bestScore;
+            currentLevelData.bestScore = Math.max(currentLevelData.bestScore, gameState.score);
+            saveLevelData();
+            
+            document.getElementById('finalScore').textContent = `分数: ${gameState.score}`;
+            document.getElementById('finalCombo').textContent = `最高连击: ${gameState.maxCombo}`;
+            document.getElementById('newRecord').textContent = isNewRecord ? '🎉 新纪录！' : '';
+            document.getElementById('gameOverScreen').style.display = 'flex';
+        }
+
+        // 屏幕震动
+        function shakeScreen() {
+            gameContainer.classList.add('screen-shake');
+            setTimeout(() => gameContainer.classList.remove('screen-shake'), 300);
+        }
+
+        // 创建爆炸效果
+        function createExplosion(x, y) {
+            for (let i = 0; i < 8; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = x + 'px';
+                particle.style.top = y + 'px';
+                particle.style.width = '4px';
+                particle.style.height = '4px';
+                particle.style.background = '#ffff00';
+                particle.style.borderRadius = '50%';
+                particle.style.boxShadow = '0 0 10px #ffff00';
+                
+                const angle = (Math.PI * 2 * i) / 8;
+                const velocity = 100;
+                const vx = Math.cos(angle) * velocity;
+                const vy = Math.sin(angle) * velocity;
+                
+                gameArea.appendChild(particle);
+                
+                let px = x, py = y;
+                const animateParticle = () => {
+                    px += vx * 0.02;
+                    py += vy * 0.02;
+                    particle.style.left = px + 'px';
+                    particle.style.top = py + 'px';
+                    particle.style.opacity = parseFloat(particle.style.opacity || 1) - 0.05;
+                    
+                    if (parseFloat(particle.style.opacity) > 0) {
+                        requestAnimationFrame(animateParticle);
+                    } else {
+                        particle.remove();
+                    }
+                };
+                
+                requestAnimationFrame(animateParticle);
+            }
+        }
+
+        // 更新显示
+        function updateDisplay() {
+            scoreElement.textContent = gameState.score;
+            comboElement.textContent = gameState.combo;
+            
+            const hearts = '❤️'.repeat(gameState.lives) + '🖤'.repeat(3 - gameState.lives);
+            livesElement.textContent = hearts;
+
+            // 更新进度条
+            const progress = Math.min((gameState.score / gameState.targetScore) * 100, 100);
+            progressFill.style.width = progress + '%';
+        }
+
+        // 游戏主循环
+        function gameLoop() {
+            if (!gameState.gameRunning) return;
+            
+            updateFallingKanas();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // 重新挑战当前关卡
+        function restartLevel() {
+            document.getElementById('gameOverScreen').style.display = 'none';
+            startLevel(gameState.currentLevel);
+        }
+
+        // 返回关卡选择
+        function backToLevelSelect() {
+            document.getElementById('gameOverScreen').style.display = 'none';
+            document.getElementById('levelComplete').style.display = 'none';
+            showLevelSelect();
+        }
+
+        // 返回主菜单
+        function backToStart() {
+            document.getElementById('levelSelectScreen').style.display = 'none';
+            document.getElementById('startScreen').style.display = 'flex';
+        }
+
+        // 事件监听
+        inputBox.addEventListener('input', checkInput);
+        
+        // 移除了 Enter 键的监听，因为现在使用实时匹配
+        
+        // 防止输入框失去焦点
+        document.addEventListener('click', () => {
+            if (gameState.gameRunning) {
+                inputBox.focus();
+            }
+        });
+
+        // 初始化游戏
+        initLevelData();
+
+    </script>
+</body>
+</html>
