@@ -134,8 +134,9 @@ function startLevel(levelId) {
     updateDisplay();
     
     inputBox.value = '';
+    lastInputLength = 0;
     inputBox.focus();
-    
+
     startLoop();
 }
 
@@ -200,11 +201,11 @@ function updateFallingKanas(dt) {
     }
 }
 
-// 命中一个掉落的假名
-function hitKana(kanaObj) {
-    kanaObj.element.classList.add('hit');
-    createExplosion(kanaObj.x + 25, kanaObj.y + 25);
+// 上一次输入框的长度（用来区分「敲字母」和「退格」）
+let lastInputLength = 0;
 
+// 命中一个掉落的假名（得分立即结算，爆炸在最后一发子弹抵达后播放）
+function hitKana(kanaObj) {
     const baseScore = kanaObj.isRevenge ? 50 : 20;
     const comboBonus = Math.floor(gameState.combo * 5);
     gameState.score += baseScore + comboBonus;
@@ -226,10 +227,15 @@ function hitKana(kanaObj) {
         setTimeout(() => gameContainer.classList.remove('bullet-time'), 1000);
     }
 
-    // 立即移出判定列表，动画结束后再移除 DOM
+    // 立即移出判定列表并停在原地，等子弹到达后再爆炸
     const idx = gameState.fallingKanas.indexOf(kanaObj);
     if (idx > -1) gameState.fallingKanas.splice(idx, 1);
-    setTimeout(() => kanaObj.element.remove(), 300);
+
+    fireBullet(gameArea, inputBox, kanaObj, () => {
+        kanaObj.element.classList.add('hit');
+        createExplosion(kanaObj.x + 25, kanaObj.y + 25);
+        setTimeout(() => kanaObj.element.remove(), 300);
+    });
 
     updateDisplay();
 
@@ -241,6 +247,8 @@ function hitKana(kanaObj) {
 // 检查输入：与屏幕上的假名逐个比对（最靠近底部的优先）
 function checkInput() {
     const input = inputBox.value.toLowerCase().trim();
+    const typedForward = input.length > lastInputLength; // 排除退格
+    lastInputLength = input.length;
     if (!input) return;
 
     const candidates = gameState.fallingKanas
@@ -265,11 +273,20 @@ function checkInput() {
 
     if (result.type === 'hit') {
         inputBox.value = '';
+        lastInputLength = 0;
         hitKana(candidates[result.index].obj);
     } else if (result.type === 'miss') {
         inputBox.value = '';
+        lastInputLength = 0;
+        fireBullet(gameArea, inputBox, null);
         resetCombo();
         shakeScreen();
+    } else if (typedForward) {
+        // 部分匹配：子弹打向最靠近底部、且前缀吻合的假名
+        const target = candidates.find(c => c.romaji.some(r => r.startsWith(input)));
+        if (target) {
+            fireBullet(gameArea, inputBox, target.obj, () => flashKana(target.obj));
+        }
     }
 }
 

@@ -372,3 +372,23 @@ body {
         animation: none;
     }
 }
+
+/* 子弹：从输入框射向目标假名 */
+.bullet {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 4px;
+    height: 22px;
+    margin: -11px 0 0 -2px;
+    border-radius: 2px;
+    background: linear-gradient(to top, transparent, #ffffff);
+    box-shadow: 0 0 10px #00ffff, 0 0 20px #00ffff;
+    pointer-events: none;
+    z-index: 998;
+}
+
+.bullet.bullet-miss {
+    background: linear-gradient(to top, transparent, #ff6666);
+    box-shadow: 0 0 10px #ff4444;
+}
