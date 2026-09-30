@@ -100,6 +100,7 @@ function startLevel(levelId) {
     if (!level || !levelData[levelId].unlocked) return;
 
     // 清理之前的游戏状态
+    Sound.init();
     stopLoop();
 
     // 清理之前的假名
@@ -206,6 +207,7 @@ let lastInputLength = 0;
 
 // 命中一个掉落的假名（得分立即结算，爆炸在最后一发子弹抵达后播放）
 function hitKana(kanaObj) {
+    Sound.hit(gameState.combo);
     const baseScore = kanaObj.isRevenge ? 50 : 20;
     const comboBonus = Math.floor(gameState.combo * 5);
     gameState.score += baseScore + comboBonus;
@@ -279,12 +281,14 @@ function checkInput() {
         inputBox.value = '';
         lastInputLength = 0;
         fireBullet(gameArea, inputBox, null);
+        Sound.miss();
         resetCombo();
         shakeScreen();
     } else if (typedForward) {
         // 部分匹配：子弹打向最靠近底部、且前缀吻合的假名
         const target = candidates.find(c => c.romaji.some(r => r.startsWith(input)));
         if (target) {
+            Sound.pluck(gameState.combo);
             fireBullet(gameArea, inputBox, target.obj, () => flashKana(target.obj));
         }
     }
@@ -321,6 +325,7 @@ function completeLevel() {
     // 显示完成界面
     document.getElementById('completeScore').textContent = `分数: ${gameState.score}`;
     document.getElementById('completeCombo').textContent = `最高连击: ${gameState.maxCombo}` + (isNewRecord ? ' 🎉新纪录!' : '');
+    Sound.win();
     document.getElementById('levelComplete').style.display = 'block';
 }
 
@@ -344,6 +349,7 @@ function resetCombo() {
 // 失去生命
 function loseLife() {
     gameState.lives--;
+    if (gameState.lives > 0) Sound.lose();
     shakeScreen();
     updateDisplay();
     
@@ -373,6 +379,7 @@ function gameOver() {
     document.getElementById('finalScore').textContent = `分数: ${gameState.score}`;
     document.getElementById('finalCombo').textContent = `最高连击: ${gameState.maxCombo}`;
     document.getElementById('newRecord').textContent = isNewRecord ? '🎉 新纪录！' : '';
+    Sound.over();
     document.getElementById('gameOverScreen').style.display = 'flex';
 }
 
@@ -538,3 +545,18 @@ document.getElementById('quitBtn').addEventListener('click', () => {
     setPaused(false);
     showLevelSelect();
 });
+
+// 静音开关
+const muteBtn = document.getElementById('muteBtn');
+function renderMuteBtn() {
+    muteBtn.textContent = Sound.muted ? '🔇' : '🔊';
+    muteBtn.setAttribute('aria-label', Sound.muted ? '开启声音' : '静音');
+}
+muteBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    Sound.init();
+    Sound.setMuted(!Sound.muted);
+    renderMuteBtn();
+    if (gameState.gameRunning && !gameState.paused) inputBox.focus();
+});
+renderMuteBtn();

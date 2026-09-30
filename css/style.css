@@ -392,3 +392,23 @@ body {
     background: linear-gradient(to top, transparent, #ff6666);
     box-shadow: 0 0 10px #ff4444;
 }
+
+/* 静音按钮（始终可见，位于最上层） */
+.mute-btn {
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    z-index: 4000;
+    width: 40px;
+    height: 40px;
+    font-size: 20px;
+    background: rgba(0,0,0,0.7);
+    border: 2px solid #00ffff;
+    border-radius: 50%;
+    color: white;
+    cursor: pointer;
+}
+
+.mute-btn:hover {
+    box-shadow: 0 0 15px rgba(0,255,255,0.8);
+}
