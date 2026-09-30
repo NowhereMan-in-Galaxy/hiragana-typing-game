@@ -161,7 +161,7 @@ function createFallingKana() {
     const kanaElement = document.createElement('div');
     kanaElement.className = 'falling-kana' + (isRevenge ? ' revenge' : '');
     kanaElement.textContent = kana;
-    kanaElement.style.left = Math.random() * (window.innerWidth - 100) + 'px';
+    kanaElement.style.left = Math.random() * Math.max(0, gameArea.clientWidth - 100) + 'px';
     kanaElement.style.top = '-60px';
     
     const kanaObj = {
@@ -186,7 +186,7 @@ function updateFallingKanas(dt) {
         kanaObj.y += kanaObj.speed * ramp * dt;
         kanaObj.element.style.top = kanaObj.y + 'px';
 
-        if (kanaObj.y > window.innerHeight) {
+        if (kanaObj.y > gameArea.clientHeight) {
             kanaObj.element.remove();
             toRemove.push(index);
             loseLife();

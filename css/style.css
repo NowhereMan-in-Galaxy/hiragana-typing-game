@@ -9,6 +9,7 @@ body {
     background: linear-gradient(45deg, #1a1a2e, #16213e, #0f3460);
     overflow: hidden;
     height: 100vh;
+    height: 100dvh;
     color: white;
 }
 
@@ -16,6 +17,7 @@ body {
     position: relative;
     width: 100vw;
     height: 100vh;
+    height: 100dvh;
     overflow: hidden;
 }
 
@@ -85,6 +87,7 @@ body {
 
 .input-box {
     width: 400px;
+    max-width: 90vw;
     height: 60px;
     font-size: 24px;
     text-align: center;
@@ -293,4 +296,79 @@ body {
 
 .level-select-screen > * {
     flex-shrink: 0;
+}
+
+/* 小屏幕适配 */
+@media (max-width: 700px) {
+    .game-header {
+        gap: 6px;
+        width: 100%;
+        justify-content: center;
+        flex-wrap: wrap;
+        top: 6px;
+    }
+
+    .score, .combo, .lives, .level-info {
+        padding: 4px 9px;
+        font-size: 12px;
+    }
+
+    .progress-bar {
+        top: 64px;
+        width: 80vw;
+    }
+
+    .falling-kana {
+        font-size: 36px;
+    }
+
+    .falling-kana.revenge {
+        font-size: 42px;
+    }
+
+    .input-area {
+        bottom: 12px;
+    }
+
+    .input-box {
+        height: 50px;
+        font-size: 20px;
+    }
+
+    .start-screen h1 {
+        font-size: 34px;
+    }
+
+    .level-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+        width: 92vw;
+    }
+
+    .level-btn {
+        min-height: 64px;
+        padding: 8px;
+    }
+
+    .start-btn, .restart-btn, .back-btn {
+        font-size: 18px;
+        padding: 12px 22px;
+    }
+
+    .level-complete {
+        width: 90vw;
+        padding: 24px;
+    }
+}
+
+@media (min-width: 701px) and (max-width: 1000px) {
+    .level-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .screen-shake, .bullet-time, .start-screen h1, .level-complete h2, .falling-kana.revenge {
+        animation: none;
+    }
 }
