@@ -1,57 +1,11 @@
-// 五十音数据
-const hiraganaData = {
-    'あ': 'a', 'い': 'i', 'う': 'u', 'え': 'e', 'お': 'o',
-    'か': 'ka', 'き': 'ki', 'く': 'ku', 'け': 'ke', 'こ': 'ko',
-    'さ': 'sa', 'し': 'shi', 'す': 'su', 'せ': 'se', 'そ': 'so',
-    'た': 'ta', 'ち': 'chi', 'つ': 'tsu', 'て': 'te', 'と': 'to',
-    'な': 'na', 'に': 'ni', 'ぬ': 'nu', 'ね': 'ne', 'の': 'no',
-    'は': 'ha', 'ひ': 'hi', 'ふ': 'fu', 'へ': 'he', 'ほ': 'ho',
-    'ま': 'ma', 'み': 'mi', 'む': 'mu', 'め': 'me', 'も': 'mo',
-    'や': 'ya', 'ゆ': 'yu', 'よ': 'yo',
-    'ら': 'ra', 'り': 'ri', 'る': 'ru', 'れ': 're', 'ろ': 'ro',
-    'わ': 'wa', 'ゐ': 'wi', 'ゑ': 'we', 'を': 'wo', 'ん': 'n'
-};
-
-const katakanaData = {
-    'ア': 'a', 'イ': 'i', 'ウ': 'u', 'エ': 'e', 'オ': 'o',
-    'カ': 'ka', 'キ': 'ki', 'ク': 'ku', 'ケ': 'ke', 'コ': 'ko',
-    'サ': 'sa', 'シ': 'shi', 'ス': 'su', 'セ': 'se', 'ソ': 'so',
-    'タ': 'ta', 'チ': 'chi', 'ツ': 'tsu', 'テ': 'te', 'ト': 'to',
-    'ナ': 'na', 'ニ': 'ni', 'ヌ': 'nu', 'ネ': 'ne', 'ノ': 'no',
-    'ハ': 'ha', 'ヒ': 'hi', 'フ': 'fu', 'ヘ': 'he', 'ホ': 'ho',
-    'マ': 'ma', 'ミ': 'mi', 'ム': 'mu', 'メ': 'me', 'モ': 'mo',
-    'ヤ': 'ya', 'ユ': 'yu', 'ヨ': 'yo',
-    'ラ': 'ra', 'リ': 'ri', 'ル': 'ru', 'レ': 're', 'ロ': 'ro',
-    'ワ': 'wa', 'ヰ': 'wi', 'ヱ': 'we', 'ヲ': 'wo', 'ン': 'n'
-};
-
-// 关卡配置
-const levelConfig = [
-    // 学习关卡
-    { id: 1, name: 'あ行平假名', type: 'hiragana', chars: ['あ', 'い', 'う', 'え', 'お'], target: 500 },
-    { id: 2, name: 'あ行片假名', type: 'katakana', chars: ['ア', 'イ', 'ウ', 'エ', 'オ'], target: 500 },
-    { id: 3, name: 'か行平假名', type: 'hiragana', chars: ['か', 'き', 'く', 'け', 'こ'], target: 600 },
-    { id: 4, name: 'か行片假名', type: 'katakana', chars: ['カ', 'キ', 'ク', 'ケ', 'コ'], target: 600 },
-    { id: 5, name: 'さ行平假名', type: 'hiragana', chars: ['さ', 'し', 'す', 'せ', 'そ'], target: 700 },
-    { id: 6, name: 'さ行片假名', type: 'katakana', chars: ['サ', 'シ', 'ス', 'セ', 'ソ'], target: 700 },
-    { id: 7, name: 'た行平假名', type: 'hiragana', chars: ['た', 'ち', 'つ', 'て', 'と'], target: 800 },
-    { id: 8, name: 'た行片假名', type: 'katakana', chars: ['タ', 'チ', 'ツ', 'テ', 'ト'], target: 800 },
-    { id: 9, name: 'な行平假名', type: 'hiragana', chars: ['な', 'に', 'ぬ', 'ね', 'の'], target: 900 },
-    { id: 10, name: 'な行片假名', type: 'katakana', chars: ['ナ', 'ニ', 'ヌ', 'ネ', 'ノ'], target: 900 },
-    
-    // 挑战关卡
-    { id: 11, name: '混合挑战1', type: 'challenge', chars: ['あ', 'い', 'う', 'え', 'お', 'ア', 'イ', 'ウ', 'エ', 'オ'], target: 1000 },
-    { id: 12, name: '混合挑战2', type: 'challenge', chars: ['か', 'き', 'く', 'け', 'こ', 'カ', 'キ', 'ク', 'ケ', 'コ'], target: 1200 },
-    { id: 13, name: '终极挑战', type: 'challenge', chars: Object.keys({...hiraganaData, ...katakanaData}), target: 2000 }
-];
-
 // 游戏状态
 let gameState = {
     score: 0,
     combo: 0,
     maxCombo: 0,
     lives: 3,
-    currentLevel: 1,
+    currentLevel: null,
+    currentLevelIndex: 0,
     fallingKanas: [],
     wrongKanas: new Set(),
     gameRunning: false,
@@ -62,7 +16,7 @@ let gameState = {
 };
 
 // 关卡数据（存储最高分）
-let levelData = JSON.parse(localStorage.getItem('kanaGameLevelData') || '{}');
+let levelData = JSON.parse(localStorage.getItem('kanaGameLevelData_v2') || '{}');
 
 // 当前关卡的假名池
 let currentKanaPool = [];
@@ -83,7 +37,7 @@ function initLevelData() {
     levelConfig.forEach(level => {
         if (!levelData[level.id]) {
             levelData[level.id] = {
-                unlocked: level.id === 1,
+                unlocked: level.id === levelConfig[0].id,
                 completed: false,
                 bestScore: 0
             };
@@ -94,7 +48,7 @@ function initLevelData() {
 
 // 保存关卡数据
 function saveLevelData() {
-    localStorage.setItem('kanaGameLevelData', JSON.stringify(levelData));
+    localStorage.setItem('kanaGameLevelData_v2', JSON.stringify(levelData));
 }
 
 // 显示关卡选择
@@ -152,6 +106,7 @@ function startLevel(levelId) {
     gameArea.innerHTML = '';
 
     gameState.currentLevel = levelId;
+    gameState.currentLevelIndex = levelConfig.indexOf(level);
     gameState.targetScore = level.target;
     gameState.score = 0;
     gameState.combo = 0;
@@ -173,7 +128,7 @@ function startLevel(levelId) {
     currentKanaPool = level.chars;
     
     document.getElementById('levelSelectScreen').style.display = 'none';
-    currentLevelElement.textContent = levelId;
+    currentLevelElement.textContent = gameState.currentLevelIndex + 1;
     updateDisplay();
     
     inputBox.value = '';
@@ -251,124 +206,76 @@ function updateFallingKanas() {
     }
 }
 
-// 检查输入 - 改进版：支持部分匹配和完全匹配
+// 命中一个掉落的假名
+function hitKana(kanaObj) {
+    kanaObj.element.classList.add('hit');
+    createExplosion(kanaObj.x + 25, kanaObj.y + 25);
+
+    const baseScore = kanaObj.isRevenge ? 50 : 20;
+    const comboBonus = Math.floor(gameState.combo * 5);
+    gameState.score += baseScore + comboBonus;
+    gameState.combo++;
+
+    if (gameState.combo > gameState.maxCombo) {
+        gameState.maxCombo = gameState.combo;
+    }
+
+    gameState.wrongKanas.delete(kanaObj.kana);
+
+    if (gameState.combo % 5 === 0) {
+        comboDisplay.classList.add('active');
+        setTimeout(() => comboDisplay.classList.remove('active'), 300);
+    }
+
+    if (gameState.combo % 20 === 0) {
+        gameContainer.classList.add('bullet-time');
+        setTimeout(() => gameContainer.classList.remove('bullet-time'), 1000);
+    }
+
+    // 立即移出判定列表，动画结束后再移除 DOM
+    const idx = gameState.fallingKanas.indexOf(kanaObj);
+    if (idx > -1) gameState.fallingKanas.splice(idx, 1);
+    setTimeout(() => kanaObj.element.remove(), 300);
+
+    updateDisplay();
+
+    if (gameState.score >= gameState.targetScore) {
+        completeLevel();
+    }
+}
+
+// 检查输入：与屏幕上的假名逐个比对（最靠近底部的优先）
 function checkInput() {
     const input = inputBox.value.toLowerCase().trim();
     if (!input) return;
 
-    const allKanas = {...hiraganaData, ...katakanaData};
-    let matched = false;
-    let partialMatch = false;
+    const candidates = gameState.fallingKanas
+        .slice()
+        .sort((a, b) => b.y - a.y)
+        .map(k => ({ obj: k, kana: k.kana, romaji: KANA_ROMAJI[k.kana] }));
 
-    // 检查完全匹配
-    gameState.fallingKanas.forEach((kanaObj, index) => {
-        if (kanaObj.element.classList.contains('hit')) return;
-        
-        const romaji = allKanas[kanaObj.kana];
-        
-        // 完全匹配
-        if (romaji === input) {
-            matched = true;
-            kanaObj.element.classList.add('hit');
-            
-            createExplosion(kanaObj.x + 25, kanaObj.y + 25);
-            
-            const baseScore = kanaObj.isRevenge ? 50 : 20;
-            const comboBonus = Math.floor(gameState.combo * 5);
-            gameState.score += baseScore + comboBonus;
-            gameState.combo++;
-            
-            if (gameState.combo > gameState.maxCombo) {
-                gameState.maxCombo = gameState.combo;
-            }
+    const result = matchInput(input, candidates);
 
-            if (gameState.wrongKanas.has(kanaObj.kana)) {
-                gameState.wrongKanas.delete(kanaObj.kana);
-            }
-
-            if (gameState.combo % 5 === 0) {
-                comboDisplay.classList.add('active');
-                setTimeout(() => comboDisplay.classList.remove('active'), 300);
-            }
-
-            if (gameState.combo % 20 === 0) {
-                gameContainer.classList.add('bullet-time');
-                setTimeout(() => gameContainer.classList.remove('bullet-time'), 1000);
-            }
-
-            setTimeout(() => {
-                const idx = gameState.fallingKanas.indexOf(kanaObj);
-                if (idx > -1) {
-                    kanaObj.element.remove();
-                    gameState.fallingKanas.splice(idx, 1);
-                }
-            }, 300);
-
-            updateDisplay();
-            
-            // 检查是否达到目标分数
-            if (gameState.score >= gameState.targetScore) {
-                completeLevel();
-            }
-            
-            // 清空输入框
-            inputBox.value = '';
-        }
-        // 部分匹配 - 输入是正确罗马音的开头
-        else if (romaji.startsWith(input)) {
-            partialMatch = true;
-            // 给假名添加部分匹配的视觉提示
-            kanaObj.element.style.color = '#ffff00';
-            kanaObj.element.style.textShadow = '0 0 30px #ffff00';
-        }
-        // 不匹配 - 恢复原始颜色
-        else {
-            if (!kanaObj.isRevenge) {
-                kanaObj.element.style.color = '#00ffff';
-                kanaObj.element.style.textShadow = '0 0 20px #00ffff';
-            }
+    // 部分匹配的假名高亮，其余恢复
+    candidates.forEach(c => {
+        const partial = c.romaji.some(r => r.startsWith(input));
+        const el = c.obj.element;
+        if (partial) {
+            el.style.color = '#ffff00';
+            el.style.textShadow = '0 0 30px #ffff00';
+        } else {
+            el.style.color = '';
+            el.style.textShadow = '';
         }
     });
 
-    // 如果完全匹配了，已经清空输入框
-    if (matched) {
-        return;
-    }
-
-    // 如果有部分匹配，保留输入等待完成
-    if (partialMatch) {
-        return;
-    }
-
-    // 没有任何匹配 - 检查是否输入了错误的完整罗马音
-    let isCompleteWrongInput = false;
-    const possibleKanas = Object.keys(allKanas).filter(k => allKanas[k] === input);
-    
-    if (possibleKanas.length > 0) {
-        // 输入了完整的罗马音，但不是当前掉落的假名
-        possibleKanas.forEach(kana => {
-            if (currentKanaPool.includes(kana)) {
-                gameState.wrongKanas.add(kana);
-            }
-        });
-        isCompleteWrongInput = true;
-    } else {
-        // 检查输入是否不可能匹配任何假名（不是任何罗马音的前缀）
-        const anyPossibleMatch = currentKanaPool.some(kana => {
-            const romaji = allKanas[kana];
-            return romaji && romaji.startsWith(input);
-        });
-        
-        if (!anyPossibleMatch && input.length >= 2) {
-            isCompleteWrongInput = true;
-        }
-    }
-
-    // 如果是完全错误的输入，清空并惩罚
-    if (isCompleteWrongInput) {
+    if (result.type === 'hit') {
+        inputBox.value = '';
+        hitKana(candidates[result.index].obj);
+    } else if (result.type === 'miss') {
+        inputBox.value = '';
         resetCombo();
         shakeScreen();
-        inputBox.value = '';
     }
 }
 
@@ -393,9 +300,10 @@ function completeLevel() {
     currentLevelData.bestScore = Math.max(currentLevelData.bestScore, gameState.score);
 
     // 解锁下一关
-    if (gameState.currentLevel < levelConfig.length) {
-        levelData[gameState.currentLevel + 1] = levelData[gameState.currentLevel + 1] || {};
-        levelData[gameState.currentLevel + 1].unlocked = true;
+    const next = levelConfig[gameState.currentLevelIndex + 1];
+    if (next) {
+        levelData[next.id] = levelData[next.id] || {};
+        levelData[next.id].unlocked = true;
     }
 
     saveLevelData();
@@ -409,8 +317,9 @@ function completeLevel() {
 // 下一关
 function nextLevel() {
     document.getElementById('levelComplete').style.display = 'none';
-    if (gameState.currentLevel < levelConfig.length) {
-        startLevel(gameState.currentLevel + 1);
+    const next = levelConfig[gameState.currentLevelIndex + 1];
+    if (next) {
+        startLevel(next.id);
     } else {
         backToLevelSelect();
     }

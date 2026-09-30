@@ -283,3 +283,14 @@ body {
     0% { filter: hue-rotate(0deg); }
     100% { filter: hue-rotate(360deg); }
 }
+
+/* 关卡较多时，关卡选择页可滚动 */
+.level-select-screen {
+    overflow-y: auto;
+    justify-content: flex-start;
+    padding: 30px 10px;
+}
+
+.level-select-screen > * {
+    flex-shrink: 0;
+}
