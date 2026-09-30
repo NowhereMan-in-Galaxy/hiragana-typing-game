@@ -1,0 +1,414 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Arial', sans-serif;
+    background: linear-gradient(45deg, #1a1a2e, #16213e, #0f3460);
+    overflow: hidden;
+    height: 100vh;
+    height: 100dvh;
+    color: white;
+}
+
+.game-container {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+}
+
+.game-header {
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    display: flex;
+    gap: 20px;
+    font-size: 16px;
+    font-weight: bold;
+}
+
+.score, .combo, .lives, .level-info {
+    background: rgba(0,0,0,0.7);
+    padding: 8px 15px;
+    border-radius: 20px;
+    border: 2px solid #00ffff;
+    box-shadow: 0 0 15px rgba(0,255,255,0.5);
+    font-size: 14px;
+}
+
+.combo.active {
+    animation: comboGlow 0.3s ease-in-out;
+    border-color: #ffff00;
+    box-shadow: 0 0 30px rgba(255,255,0,0.8);
+}
+
+.game-area {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+.falling-kana {
+    position: absolute;
+    font-size: 48px;
+    font-weight: bold;
+    color: #00ffff;
+    text-shadow: 0 0 20px currentColor;
+    transition: all 0.1s ease;
+    user-select: none;
+    cursor: default;
+}
+
+.falling-kana.revenge {
+    color: #ff4444;
+    font-size: 56px;
+    text-shadow: 0 0 30px #ff4444;
+    animation: revenge-pulse 0.5s infinite alternate;
+}
+
+.falling-kana.hit {
+    animation: explode 0.3s ease-out forwards;
+}
+
+.input-area {
+    position: absolute;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+}
+
+.input-box {
+    width: 400px;
+    max-width: 90vw;
+    height: 60px;
+    font-size: 24px;
+    text-align: center;
+    background: rgba(0,0,0,0.8);
+    border: 3px solid #00ffff;
+    border-radius: 30px;
+    color: white;
+    outline: none;
+    box-shadow: 0 0 30px rgba(0,255,255,0.5);
+}
+
+.input-box:focus {
+    border-color: #ffff00;
+    box-shadow: 0 0 40px rgba(255,255,0,0.7);
+}
+
+.start-screen, .game-over-screen, .level-select-screen, .pause-screen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.9);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+}
+
+.start-screen h1 {
+    font-size: 48px;
+    margin-bottom: 20px;
+    background: linear-gradient(45deg, #00ffff, #ffff00, #ff00ff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: rainbow 2s infinite;
+}
+
+.level-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 15px;
+    max-width: 800px;
+    margin: 20px 0;
+}
+
+.level-btn {
+    padding: 15px;
+    font-size: 18px;
+    background: linear-gradient(45deg, #333, #555);
+    border: 2px solid #666;
+    border-radius: 15px;
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s;
+    text-align: center;
+    min-height: 80px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.level-btn.unlocked {
+    background: linear-gradient(45deg, #00ffff, #0080ff);
+    border-color: #00ffff;
+}
+
+.level-btn.completed {
+    background: linear-gradient(45deg, #00ff00, #008000);
+    border-color: #00ff00;
+}
+
+.level-btn.challenge {
+    background: linear-gradient(45deg, #ff4444, #cc0000);
+    border-color: #ff4444;
+}
+
+.level-btn:hover.unlocked, .level-btn:hover.completed, .level-btn:hover.challenge {
+    transform: scale(1.05);
+    box-shadow: 0 0 20px rgba(0,255,255,0.8);
+}
+
+.level-btn .level-title {
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.level-btn .level-score {
+    font-size: 12px;
+    margin-top: 5px;
+    opacity: 0.8;
+}
+
+.start-btn, .restart-btn, .back-btn {
+    padding: 15px 30px;
+    font-size: 24px;
+    background: linear-gradient(45deg, #00ffff, #0080ff);
+    border: none;
+    border-radius: 25px;
+    color: white;
+    cursor: pointer;
+    margin: 10px;
+    transition: all 0.3s;
+}
+
+.start-btn:hover, .restart-btn:hover, .back-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 0 30px rgba(0,255,255,0.8);
+}
+
+.particle {
+    position: absolute;
+    pointer-events: none;
+    z-index: 999;
+}
+
+.screen-shake {
+    animation: shake 0.3s ease-in-out;
+}
+
+.bullet-time {
+    animation: bulletTime 1s ease-out;
+}
+
+.progress-bar {
+    position: absolute;
+    top: 70px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 300px;
+    height: 15px;
+    background: rgba(0,0,0,0.7);
+    border-radius: 8px;
+    overflow: hidden;
+    border: 2px solid #00ffff;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #00ffff, #ffff00);
+    transition: width 0.3s ease;
+    border-radius: 6px;
+}
+
+.level-complete {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0,0,0,0.9);
+    padding: 40px;
+    border-radius: 20px;
+    border: 3px solid #00ff00;
+    text-align: center;
+    z-index: 3000;
+    box-shadow: 0 0 50px rgba(0,255,0,0.8);
+}
+
+.level-complete h2 {
+    font-size: 36px;
+    color: #00ff00;
+    margin-bottom: 20px;
+    animation: rainbow 1s infinite;
+}
+
+@keyframes comboGlow {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+}
+
+@keyframes explode {
+    0% { transform: scale(1) rotate(0deg); opacity: 1; }
+    100% { transform: scale(2) rotate(360deg); opacity: 0; }
+}
+
+@keyframes revenge-pulse {
+    0% { transform: scale(1); }
+    100% { transform: scale(1.1); }
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-10px); }
+    75% { transform: translateX(10px); }
+}
+
+@keyframes bulletTime {
+    0% { filter: hue-rotate(0deg) saturate(1); }
+    50% { filter: hue-rotate(180deg) saturate(2); }
+    100% { filter: hue-rotate(360deg) saturate(1); }
+}
+
+@keyframes rainbow {
+    0% { filter: hue-rotate(0deg); }
+    100% { filter: hue-rotate(360deg); }
+}
+
+/* 关卡较多时，关卡选择页可滚动 */
+.level-select-screen {
+    overflow-y: auto;
+    justify-content: flex-start;
+    padding: 30px 10px;
+}
+
+.level-select-screen > * {
+    flex-shrink: 0;
+}
+
+/* 小屏幕适配 */
+@media (max-width: 700px) {
+    .game-header {
+        gap: 6px;
+        width: 100%;
+        justify-content: center;
+        flex-wrap: wrap;
+        top: 6px;
+    }
+
+    .score, .combo, .lives, .level-info {
+        padding: 4px 9px;
+        font-size: 12px;
+    }
+
+    .progress-bar {
+        top: 64px;
+        width: 80vw;
+    }
+
+    .falling-kana {
+        font-size: 36px;
+    }
+
+    .falling-kana.revenge {
+        font-size: 42px;
+    }
+
+    .input-area {
+        bottom: 12px;
+    }
+
+    .input-box {
+        height: 50px;
+        font-size: 20px;
+    }
+
+    .start-screen h1 {
+        font-size: 34px;
+    }
+
+    .level-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+        width: 92vw;
+    }
+
+    .level-btn {
+        min-height: 64px;
+        padding: 8px;
+    }
+
+    .start-btn, .restart-btn, .back-btn {
+        font-size: 18px;
+        padding: 12px 22px;
+    }
+
+    .level-complete {
+        width: 90vw;
+        padding: 24px;
+    }
+}
+
+@media (min-width: 701px) and (max-width: 1000px) {
+    .level-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .screen-shake, .bullet-time, .start-screen h1, .level-complete h2, .falling-kana.revenge {
+        animation: none;
+    }
+}
+
+/* 子弹：从输入框射向目标假名 */
+.bullet {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 4px;
+    height: 22px;
+    margin: -11px 0 0 -2px;
+    border-radius: 2px;
+    background: linear-gradient(to top, transparent, #ffffff);
+    box-shadow: 0 0 10px #00ffff, 0 0 20px #00ffff;
+    pointer-events: none;
+    z-index: 998;
+}
+
+.bullet.bullet-miss {
+    background: linear-gradient(to top, transparent, #ff6666);
+    box-shadow: 0 0 10px #ff4444;
+}
+
+/* 静音按钮（始终可见，位于最上层） */
+.mute-btn {
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    z-index: 4000;
+    width: 40px;
+    height: 40px;
+    font-size: 20px;
+    background: rgba(0,0,0,0.7);
+    border: 2px solid #00ffff;
+    border-radius: 50%;
+    color: white;
+    cursor: pointer;
+}
+
+.mute-btn:hover {
+    box-shadow: 0 0 15px rgba(0,255,255,0.8);
+}
