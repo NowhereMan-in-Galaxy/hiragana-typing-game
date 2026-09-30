@@ -45,6 +45,14 @@
             <button class="back-btn" onclick="backToLevelSelect()">选择关卡</button>
         </div>
 
+        <!-- 暂停画面 -->
+        <div class="pause-screen" id="pauseScreen" style="display: none;">
+            <h1>已暂停</h1>
+            <p style="margin: 15px 0 25px;">按 Esc 或点击按钮继续</p>
+            <button class="start-btn" id="resumeBtn">继续游戏</button>
+            <button class="back-btn" id="quitBtn">退出关卡</button>
+        </div>
+
         <!-- 游戏界面 -->
         <div class="game-header">
             <div class="level-info">关卡: <span id="currentLevel">1</span></div>

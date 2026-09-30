@@ -101,7 +101,7 @@ body {
     box-shadow: 0 0 40px rgba(255,255,0,0.7);
 }
 
-.start-screen, .game-over-screen, .level-select-screen {
+.start-screen, .game-over-screen, .level-select-screen, .pause-screen {
     position: absolute;
     top: 0;
     left: 0;

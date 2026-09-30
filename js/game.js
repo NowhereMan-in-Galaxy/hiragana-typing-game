@@ -9,10 +9,12 @@ let gameState = {
     fallingKanas: [],
     wrongKanas: new Set(),
     gameRunning: false,
-    spawnRate: 2000,
-    fallSpeed: 2,
-    targetScore: 500,
-    spawnInterval: null
+    spawnRate: 2000,   // 基础生成间隔（毫秒）
+    fallSpeed: 120,    // 基础下落速度（像素/秒），与帧率无关
+    paused: false,
+    spawnTimer: 0,
+    loopId: null,
+    targetScore: 500
 };
 
 // 关卡数据（存储最高分）
@@ -98,10 +100,8 @@ function startLevel(levelId) {
     if (!level || !levelData[levelId].unlocked) return;
 
     // 清理之前的游戏状态
-    if (gameState.spawnInterval) {
-        clearInterval(gameState.spawnInterval);
-    }
-    
+    stopLoop();
+
     // 清理之前的假名
     gameArea.innerHTML = '';
 
@@ -115,16 +115,18 @@ function startLevel(levelId) {
     gameState.fallingKanas = [];
     gameState.wrongKanas.clear();
     gameState.gameRunning = true;
+    setPaused(false);
 
     // 设置难度
     if (level.type === 'challenge') {
         gameState.spawnRate = 1500;
-        gameState.fallSpeed = 3;
+        gameState.fallSpeed = 180;
     } else {
         gameState.spawnRate = 2000;
-        gameState.fallSpeed = 2;
+        gameState.fallSpeed = 120;
     }
 
+    gameState.spawnTimer = gameState.spawnRate; // 开局立即出第一个
     currentKanaPool = level.chars;
     
     document.getElementById('levelSelectScreen').style.display = 'none';
@@ -134,16 +136,7 @@ function startLevel(levelId) {
     inputBox.value = '';
     inputBox.focus();
     
-    gameLoop();
-    
-    // 开始生成假名
-    gameState.spawnInterval = setInterval(() => {
-        if (!gameState.gameRunning) {
-            clearInterval(gameState.spawnInterval);
-            return;
-        }
-        createFallingKana();
-    }, gameState.spawnRate);
+    startLoop();
 }
 
 // 生成随机假名
@@ -176,7 +169,7 @@ function createFallingKana() {
         kana: kana,
         x: parseFloat(kanaElement.style.left),
         y: -60,
-        speed: gameState.fallSpeed * (isRevenge ? 1.5 : 1),
+        speed: gameState.fallSpeed * (isRevenge ? 1.5 : 1),  // 像素/秒（未含难度倍率）
         isRevenge: isRevenge
     };
 
@@ -185,11 +178,12 @@ function createFallingKana() {
 }
 
 // 更新掉落的假名位置
-function updateFallingKanas() {
+function updateFallingKanas(dt) {
     const toRemove = [];
-    
+    const ramp = difficultyRamp();
+
     gameState.fallingKanas.forEach((kanaObj, index) => {
-        kanaObj.y += kanaObj.speed;
+        kanaObj.y += kanaObj.speed * ramp * dt;
         kanaObj.element.style.top = kanaObj.y + 'px';
 
         if (kanaObj.y > window.innerHeight) {
@@ -282,10 +276,9 @@ function checkInput() {
 // 完成关卡
 function completeLevel() {
     gameState.gameRunning = false;
+    setPaused(false);
     
-    if (gameState.spawnInterval) {
-        clearInterval(gameState.spawnInterval);
-    }
+    stopLoop();
     
     gameState.fallingKanas.forEach(kanaObj => {
         kanaObj.element.remove();
@@ -345,10 +338,9 @@ function loseLife() {
 // 游戏结束
 function gameOver() {
     gameState.gameRunning = false;
+    setPaused(false);
     
-    if (gameState.spawnInterval) {
-        clearInterval(gameState.spawnInterval);
-    }
+    stopLoop();
     
     gameState.fallingKanas.forEach(kanaObj => {
         kanaObj.element.remove();
@@ -425,12 +417,48 @@ function updateDisplay() {
     progressFill.style.width = progress + '%';
 }
 
-// 游戏主循环
-function gameLoop() {
-    if (!gameState.gameRunning) return;
-    
-    updateFallingKanas();
-    requestAnimationFrame(gameLoop);
+// 难度随进度递增：接近目标分数时，下落更快、生成更密（最高约 1.6 倍）
+function difficultyRamp() {
+    return 1 + 0.6 * Math.min(1, gameState.score / gameState.targetScore);
+}
+
+// 游戏主循环：用真实时间差驱动，不受屏幕刷新率影响
+function startLoop() {
+    let last = null;
+    const frame = (now) => {
+        if (!gameState.gameRunning) return;
+        // 暂停期间不推进时间；恢复后重新计时，避免一帧内跳很远
+        if (gameState.paused || last === null) {
+            last = now;
+        } else {
+            const dt = Math.min((now - last) / 1000, 0.05);
+            last = now;
+            gameState.spawnTimer += dt * 1000 * difficultyRamp();
+            if (gameState.spawnTimer >= gameState.spawnRate) {
+                gameState.spawnTimer = 0;
+                createFallingKana();
+            }
+            updateFallingKanas(dt);
+        }
+        gameState.loopId = requestAnimationFrame(frame);
+    };
+    gameState.loopId = requestAnimationFrame(frame);
+}
+
+function stopLoop() {
+    if (gameState.loopId) cancelAnimationFrame(gameState.loopId);
+    gameState.loopId = null;
+}
+
+// 暂停 / 继续
+function setPaused(paused) {
+    gameState.paused = paused;
+    document.getElementById('pauseScreen').style.display = paused ? 'flex' : 'none';
+    if (!paused && gameState.gameRunning) inputBox.focus();
+}
+
+function togglePause() {
+    if (gameState.gameRunning) setPaused(!gameState.paused);
 }
 
 // 重新挑战当前关卡
@@ -453,16 +481,43 @@ function backToStart() {
 }
 
 // 事件监听
-inputBox.addEventListener('input', checkInput);
+inputBox.addEventListener('input', () => {
+    if (!gameState.paused) checkInput();
+});
+
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') togglePause();
+});
+
+// 切到别的标签页 / 窗口时自动暂停
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden && gameState.gameRunning) setPaused(true);
+});
+window.addEventListener('blur', () => {
+    if (gameState.gameRunning) setPaused(true);
+});
 
 // 移除了 Enter 键的监听，因为现在使用实时匹配
 
 // 防止输入框失去焦点
 document.addEventListener('click', () => {
-    if (gameState.gameRunning) {
+    if (gameState.gameRunning && !gameState.paused) {
         inputBox.focus();
     }
 });
 
 // 初始化游戏
 initLevelData();
+
+document.getElementById('resumeBtn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    setPaused(false);
+});
+document.getElementById('quitBtn').addEventListener('click', () => {
+    gameState.gameRunning = false;
+    stopLoop();
+    gameArea.innerHTML = '';
+    gameState.fallingKanas = [];
+    setPaused(false);
+    showLevelSelect();
+});
